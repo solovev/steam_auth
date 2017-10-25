@@ -58,7 +58,7 @@ func (id OpenId) AuthUrl() string {
 		"openid.mode":       openId_mode,
 		"openid.ns":         openId_ns,
 		"openid.realm":      id.root,
-		"openid.return_to":  id.returnUrl,
+		"openid.return_to":  url.QueryEscape(id.returnUrl),
 	}
 
 	i := 0
