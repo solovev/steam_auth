@@ -51,7 +51,7 @@ func NewOpenId(r *http.Request) *OpenId {
 	return id
 }
 
-func (id OpenId) AuthUrl(string realm) string {
+func (id OpenId) AuthUrl(realm string) string {
 	if realm == "" {
 	  realm = id.root
 	}
