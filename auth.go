@@ -51,14 +51,17 @@ func NewOpenId(r *http.Request) *OpenId {
 	return id
 }
 
-func (id OpenId) AuthUrl() string {
+func (id OpenId) AuthUrl(realm string) string {
+	if realm == "" {
+	  realm = id.root
+	}
 	data := map[string]string{
 		"openid.claimed_id": openId_identifier,
 		"openid.identity":   openId_identifier,
 		"openid.mode":       openId_mode,
 		"openid.ns":         openId_ns,
-		"openid.realm":      id.root,
-		"openid.return_to":  id.returnUrl,
+		"openid.realm":      realm,
+		"openid.return_to":  url.QueryEscape(id.returnUrl),
 	}
 
 	i := 0
