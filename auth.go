@@ -112,6 +112,24 @@ func (id *OpenId) ValidateAndGetId() (string, error) {
 	return digits_extraction_regexp.ReplaceAllString(openIdUrl, ""), nil
 }
 
+// Dangerous. Only use for debug.
+func (id *OpenId) GetIdWithoutValidateToSteam() (string, error) {
+	if id.Mode() != "id_res" {
+		return "", errors.New("Mode must equal to \"id_res\".")
+	}
+
+	if id.data.Get("openid.return_to") != id.returnUrl {
+		return "", errors.New("The \"return_to url\" must match the url of current request.")
+	}
+
+	openIdUrl := id.data.Get("openid.claimed_id")
+	if !validation_regexp.MatchString(openIdUrl) {
+		return "", errors.New("Invalid steam id pattern.")
+	}
+
+	return digits_extraction_regexp.ReplaceAllString(openIdUrl, ""), nil
+}
+
 func (id OpenId) ValidateAndGetUser(apiKey string) (*PlayerSummaries, error) {
 	steamId, err := id.ValidateAndGetId()
 	if err != nil {
