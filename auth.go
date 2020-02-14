@@ -36,13 +36,14 @@ func NewOpenId(r *http.Request) *OpenId {
 	id.root = proto + r.Host
 
 	uri := r.RequestURI
-	if i := strings.Index(uri, "openid"); i != -1 {
+	if i := strings.Index(uri, "openid."); i != -1 {
 		uri = uri[0 : i-1]
 	}
 	id.returnUrl = id.root + uri
 
 	switch r.Method {
 	case "POST":
+		r.ParseForm()
 		id.data = r.Form
 	case "GET":
 		id.data = r.URL.Query()
@@ -52,24 +53,15 @@ func NewOpenId(r *http.Request) *OpenId {
 }
 
 func (id OpenId) AuthUrl() string {
-	data := map[string]string{
-		"openid.claimed_id": openId_identifier,
-		"openid.identity":   openId_identifier,
-		"openid.mode":       openId_mode,
-		"openid.ns":         openId_ns,
-		"openid.realm":      id.root,
-		"openid.return_to":  id.returnUrl,
-	}
+	data := make(url.Values)
+	data.Set("openid.claimed_id", openId_identifier)
+	data.Set("openid.identity", openId_identifier)
+	data.Set("openid.mode", openId_mode)
+	data.Set("openid.ns", openId_ns)
+	data.Set("openid.realm", id.root)
+	data.Set("openid.return_to", id.returnUrl)
 
-	i := 0
-	url := steam_login + "?"
-	for key, value := range data {
-		url += key + "=" + value
-		if i != len(data)-1 {
-			url += "&"
-		}
-		i++
-	}
+	url := steam_login + "?" + data.Encode()
 	return url
 }
 
@@ -110,6 +102,24 @@ func (id *OpenId) ValidateAndGetId() (string, error) {
 	}
 	if strings.HasSuffix(response[1], "false") {
 		return "", errors.New("Unable validate openId.")
+	}
+
+	openIdUrl := id.data.Get("openid.claimed_id")
+	if !validation_regexp.MatchString(openIdUrl) {
+		return "", errors.New("Invalid steam id pattern.")
+	}
+
+	return digits_extraction_regexp.ReplaceAllString(openIdUrl, ""), nil
+}
+
+// Dangerous. Only use for debug.
+func (id *OpenId) GetIdWithoutValidateToSteam() (string, error) {
+	if id.Mode() != "id_res" {
+		return "", errors.New("Mode must equal to \"id_res\".")
+	}
+
+	if id.data.Get("openid.return_to") != id.returnUrl {
+		return "", errors.New("The \"return_to url\" must match the url of current request.")
 	}
 
 	openIdUrl := id.data.Get("openid.claimed_id")
